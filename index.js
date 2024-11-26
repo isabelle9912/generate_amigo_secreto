@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const { randomizeSecretSanta } = require("./utils/sortear");
 const { sendMessage } = require("./utils/mensageiro");
 const exphbs = require("express-handlebars");
+const bcrypt = require("bcrypt");
 
 const app = express();
 const PORT = 3000;
@@ -25,54 +26,58 @@ app.get("/", (req, res) => {
   res.render("home", { participantes });
 });
 
-// Adicionar participante
-app.post("/add-participante", (req, res) => {
-  const { nome } = req.body;
+// Adicionar participante (com senha)
+app.post("/add-participante", async (req, res) => {
+  const { nome, senha } = req.body;
 
-  if (!nome) {
-    return res.status(400).send("Nome é obrigatório!");
+  if (!nome || !senha) {
+    return res.status(400).send("Nome e senha são obrigatórios!");
   }
 
-  participantes.push({ nome });
+  const hashedSenha = await bcrypt.hash(senha, 10); // Criptografa a senha
+  participantes.push({ nome, senha: hashedSenha });
   res.redirect("/"); // Redireciona para a página inicial
 });
 
 // Realizar sorteio
 app.post("/sortear", (req, res) => {
-  try {
-    if (participantes.length < 2) {
-      return res.status(400).send("É necessário pelo menos 2 participantes!");
-    }
-
-    // Sorteia e salva o resultado
-    resultadoSorteio = randomizeSecretSanta(participantes);
-
-    res.redirect("/links"); // Redireciona para a página de links individuais
-  } catch (error) {
-    res.status(500).send("Erro ao realizar o sorteio!");
+  if (participantes.length < 2) {
+    return res.status(400).send("É necessário pelo menos 2 participantes!");
   }
+
+  resultadoSorteio = randomizeSecretSanta(participantes);
+
+  res.redirect("/login"); // Redireciona para a página de login
 });
 
-// Página para listar os links individuais
-app.get('/links', (req, res) => {
-    const links = resultadoSorteio.map((p) => ({
-        nome: p.nome,
-        link: `/participante/${encodeURIComponent(p.nome)}`,
-    }));
-
-    res.render('links', { links });
+// Página de login
+app.get("/login", (req, res) => {
+  res.render("login");
 });
 
-// Página individual para cada participante
-app.get('/participante/:nome', (req, res) => {
-    const { nome } = req.params;
-    const participante = resultadoSorteio.find((p) => p.nome === nome);
+// Autenticar participante
+app.post("/login", async (req, res) => {
+  const { nome, senha } = req.body;
 
-    if (!participante) {
-        return res.status(404).send('Participante não encontrado!');
-    }
+  const participante = participantes.find((p) => p.nome === nome);
+  if (!participante) {
+    return res.status(400).send("Participante não encontrado!");
+  }
 
-    res.render('resultado-individual', { nome: participante.nome, amigo: participante.amigo });
+  const senhaValida = await bcrypt.compare(senha, participante.senha);
+  if (!senhaValida) {
+    return res.status(401).send("Senha incorreta!");
+  }
+
+  const resultado = resultadoSorteio.find((p) => p.nome === nome);
+  if (!resultado) {
+    return res.status(404).send("Resultado não encontrado!");
+  }
+
+  res.render("resultado-individual", {
+    nome: resultado.nome,
+    amigo: resultado.amigo,
+  });
 });
 
 app.listen(PORT, () => {
