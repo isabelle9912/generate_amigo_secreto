@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amigo Secreto</title>
+</head>
+<body>
+    <h1>Amigo Secreto</h1>
+    
+    <h2>Adicionar Participante</h2>
+    <form action="/add-participante" method="POST">
+        <input type="text" name="nome" placeholder="Nome" required>
+        <button type="submit">Adicionar</button>
+    </form>
+
+    <h2>Lista de Participantes</h2>
+    <ul>
+        {{#each participantes}}
+            <li>{{nome}}</li>
+        {{/each}}
+    </ul>
+
+    <form action="/sortear" method="POST">
+        <button type="submit">Sortear Amigo Secreto</button>
+    </form>
+</body>
+</html>

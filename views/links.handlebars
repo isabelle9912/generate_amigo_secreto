@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Links para Participantes</title>
+</head>
+<body>
+    <h1>Links para os Participantes</h1>
+
+    <ul>
+        {{#each links}}
+            <li>
+                <a href="{{link}}" target="_blank">{{nome}}</a>
+            </li>
+        {{/each}}
+    </ul>
+</body>
+</html>

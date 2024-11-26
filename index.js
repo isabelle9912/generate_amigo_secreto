@@ -1,51 +1,80 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const { randomizeSecretSanta } = require("./utils/sortear"); // Função para sortear
-const { sendMessage } = require("./utils/mensageiro"); // Função para enviar mensagem
+const { randomizeSecretSanta } = require("./utils/sortear");
+const { sendMessage } = require("./utils/mensageiro");
+const exphbs = require("express-handlebars");
 
 const app = express();
 const PORT = 3000;
 
-app.use(bodyParser.json());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Configuração do Handlebars
+app.engine("handlebars", exphbs.engine());
+app.set("view engine", "handlebars");
+
+// Public path
+app.use(express.static("public"));
 
 let participantes = [];
+let resultadoSorteio = [];
 
-// Rota para adicionar participantes
-app.post("/add-participante", (req, res) => {
-  const { nome, telefone } = req.body;
-
-  if (!nome || !telefone) {
-    return res.status(400).json({ error: "Nome e telefone são obrigatórios!" });
-  }
-
-  participantes.push({ nome, telefone });
-  res.status(201).json({ message: "Participante adicionado com sucesso!" });
+// Página inicial
+app.get("/", (req, res) => {
+  res.render("home", { participantes });
 });
 
-// Rota para realizar o sorteio
-app.post("/sortear", async (req, res) => {
-  if (participantes.length < 2) {
-    return res
-      .status(400)
-      .json({ error: "É necessário pelo menos 2 participantes!" });
+// Adicionar participante
+app.post("/add-participante", (req, res) => {
+  const { nome } = req.body;
+
+  if (!nome) {
+    return res.status(400).send("Nome é obrigatório!");
   }
 
-  try {
-    const resultado = randomizeSecretSanta(participantes);
+  participantes.push({ nome });
+  res.redirect("/"); // Redireciona para a página inicial
+});
 
-    // Enviar mensagens via WhatsApp
-    for (const { nome, telefone, amigo } of resultado) {
-      await sendMessage(telefone, `Olá ${nome}, seu amigo secreto é ${amigo}!`);
+// Realizar sorteio
+app.post("/sortear", (req, res) => {
+  try {
+    if (participantes.length < 2) {
+      return res.status(400).send("É necessário pelo menos 2 participantes!");
     }
 
-    res
-      .status(200)
-      .json({ message: "Sorteio realizado com sucesso e mensagens enviadas!" });
+    // Sorteia e salva o resultado
+    resultadoSorteio = randomizeSecretSanta(participantes);
+
+    res.redirect("/links"); // Redireciona para a página de links individuais
   } catch (error) {
-    res.status(500).json({ error: "Erro ao realizar o sorteio!" });
+    res.status(500).send("Erro ao realizar o sorteio!");
   }
+});
+
+// Página para listar os links individuais
+app.get('/links', (req, res) => {
+    const links = resultadoSorteio.map((p) => ({
+        nome: p.nome,
+        link: `/participante/${encodeURIComponent(p.nome)}`,
+    }));
+
+    res.render('links', { links });
+});
+
+// Página individual para cada participante
+app.get('/participante/:nome', (req, res) => {
+    const { nome } = req.params;
+    const participante = resultadoSorteio.find((p) => p.nome === nome);
+
+    if (!participante) {
+        return res.status(404).send('Participante não encontrado!');
+    }
+
+    res.render('resultado-individual', { nome: participante.nome, amigo: participante.amigo });
 });
 
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`Servidor rodando na porta http://localhost:${PORT}`);
 });
