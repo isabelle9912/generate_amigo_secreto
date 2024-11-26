@@ -15,6 +15,7 @@ async function sendMessage(to, message) {
       body: message,
     });
     console.log(`Mensagem enviada para ${to}`);
+    console.log(message)
   } catch (error) {
     console.error(`Erro ao enviar mensagem para ${to}:`, error);
   }
