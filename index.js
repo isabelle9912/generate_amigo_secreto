@@ -187,6 +187,11 @@ app.get("/sorteio/:id/login-participante", (req, res) => {
   res.render("login-participante", { id });
 });
 
+// Uma coisa bonita
+app.get("/bonita", (req, res) => {
+  res.render("uma-coisa-bonita");
+});
+
 // Conexão ao banco e inicialização do servidor
 const conn = require("./db/conn");
 app.listen(port, async () => {
