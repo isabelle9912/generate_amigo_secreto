@@ -10,6 +10,40 @@
       integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
       crossorigin="anonymous"
     />
+    <style>
+      /* Definindo a animação para trocar a imagem de fundo */
+      @keyframes trocarFundo {
+        0% {
+          background-image: url('https://marketplace.canva.com/EAElIfjLGsg/1/0/1600w/canva-gato-antes-do-caf%C3%A9-depois-do-caf%C3%A9-duas-fotos-e-texto-meme-OxjRdmme1K4.jpg');
+        }
+        33% {
+          background-image: url('https://pt.quizur.com/_image?href=https://img.quizur.com/f/img5c22d768d51465.93685599.jpg?lastEdited=1545787246&w=600&h=600&f=webp');
+        }
+        66% {
+          background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSBAMTqcjgooufKX0J8BYNw-G4ioAtkoVIb-w&s');
+        }
+        100% {
+          background-image: url('https://thumbs.dreamstime.com/b/voc%C3%AA-foi-hackeado-com-texto-fict%C3%ADcio-em-segundo-plano-no-fundo-negro-207792874.jpg');
+        }
+      }
+
+      /* Aplicando a animação ao corpo da página */
+      body {
+        animation: trocarFundo 15s infinite; /* Troca de imagens a cada 12 segundos */
+        background-size: cover; /* A imagem ocupará toda a tela */
+        background-position: center; /* A imagem será centralizada */
+        background-attachment: fixed; /* A imagem ficará fixa durante o rolar da página */
+        height: 100vh; /* Altura total da tela */
+        transition: background-image 1s ease-in-out; /* Suaviza a transição das imagens */
+      }
+
+      /* Definindo o fundo branco para o conteúdo para melhor legibilidade */
+      .container {
+        background-color: rgba(255, 255, 255, 0.8); /* Cor de fundo com opacidade */
+        padding: 30px; /* Espaçamento interno */
+        border-radius: 10px; /* Bordas arredondadas */
+      }
+    </style>
   </head>
   <body>
     <div class="container mt-4">
