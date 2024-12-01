@@ -1,0 +1,28 @@
+<h1>Criar Novo Sorteio</h1>
+<div class="card">
+  <div class="card-body">
+    <form action="/criar-sorteio" method="POST">
+      <div class="mb-3">
+        <label class="form-label" for="nome">Nome do Sorteio:</label>
+        <input
+          class="form-control"
+          type="text"
+          id="nome"
+          name="nome"
+          required
+        />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="descricao">Descrição:</label>
+        <textarea
+          class="form-control"
+          id="descricao"
+          name="descricao"
+        ></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Criar</button>
+    </form>
+    <a href="/" class="btn btn-link">Voltar</a>
+  </div>
+</div>

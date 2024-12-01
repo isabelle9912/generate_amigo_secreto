@@ -1,0 +1,47 @@
+<h1>Links para os Participantes</h1>
+<div class="card">
+  <div class="card-body">
+    <h1 class="card-title">{{nome}}</h1>
+    <p class="card-text">{{descricao}}</p>
+    <h2>Participantes:</h2>
+    <ul class="list-group mb-3">
+      {{#each participantes}}
+        <strong>Nome:</strong>
+        {{this.nome}}
+      {{/each}}
+    </ul>
+    {{#if participantes}}
+      <a href="/sorteio/{{id}}/login-participante" class="btn btn-info">Ver meu
+        resultado!</a>
+    {{/if}}
+    <form action="/sorteio/{{id}}/sortear" method="POST" class="mt-3">
+      <button type="submit" class="btn btn-success">Realizar Sorteio</button>
+    </form>
+
+    <h2 class="mt-4">Adicionar Participante</h2>
+    <form action="/sorteio/{{id}}/add-participante" method="POST">
+      <div class="mb-3">
+        <label class="form-label" for="nome">Nome:</label>
+        <input
+          class="form-control"
+          type="text"
+          id="nome"
+          name="nome"
+          required
+        />
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="senha">Senha:</label>
+        <input
+          class="form-control"
+          type="password"
+          id="senha"
+          name="senha"
+          required
+        />
+      </div>
+      <button type="submit" class="btn btn-primary">Adicionar</button>
+    </form>
+    <a class="btn btn-info" href="/">Voltar</a>
+  </div>
+</div>

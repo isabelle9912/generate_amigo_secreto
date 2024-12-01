@@ -1,0 +1,17 @@
+<h1>Listar Sorteios</h1>
+
+<div class="card">
+  <div class="card-body">
+    <h1>Sorteios</h1>
+    <ul class="list-group mb-3">
+      {{#each sorteios}}
+        <li class="list-group-item">
+          <a class="btn btn-link" href="/sorteio/{{this.id}}">{{this.nome}}</a>
+        </li>
+      {{else}}
+        <p>Nenhum sorteio cadastrado.</p>
+      {{/each}}
+    </ul>
+    <a class="btn btn-link" href="/">Voltar</a>
+  </div>
+</div>

@@ -1,27 +1,20 @@
 function randomizeSecretSanta(participantes) {
-  const shuffled = [...participantes];
-  let valid = false;
+  let shuffled;
+  let hasSelfAssignment;
 
-  while (!valid) {
-    // Embaralha os participantes
-    shuffled.sort(() => Math.random() - 0.5);
+  do {
+    shuffled = [...participantes].sort(() => Math.random() - 0.5);
+    hasSelfAssignment = participantes.some(
+      (participante, index) => participante.nome === shuffled[index].nome
+    );
+  } while (hasSelfAssignment);
 
-    valid = true; // Assume que o sorteio é válido
-    for (let i = 0; i < participantes.length; i++) {
-      if (participantes[i].nome === shuffled[i].nome) {
-        valid = false; // Alguém tirou a si mesmo, sorteio inválido
-        break;
-      }
-    }
-  }
-
-  // Mapeia o resultado associando cada participante ao seu amigo secreto
-  const resultado = participantes.map((p, i) => ({
-    ...p,
-    amigo: shuffled[i].nome,
+  const resultados = participantes.map((participante, index) => ({
+    nome: participante.nome,
+    amigo: shuffled[index].nome,
   }));
 
-  return resultado;
+  return resultados;
 }
 
 module.exports = { randomizeSecretSanta };

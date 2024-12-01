@@ -1,13 +1,14 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const { randomizeSecretSanta } = require("./utils/sortear");
-const { sendMessage } = require("./utils/mensageiro");
 const exphbs = require("express-handlebars");
 const bcrypt = require("bcrypt");
+const { Sorteio, Participante } = require("./models/Models");
+const { randomizeSecretSanta } = require("./utils/sortear");
 
 const app = express();
-const PORT = 3000;
+const port = process.env.PORT || 8080;
 
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -15,71 +16,184 @@ app.use(express.urlencoded({ extended: true }));
 app.engine("handlebars", exphbs.engine());
 app.set("view engine", "handlebars");
 
-// Public path
+// Static Files
 app.use(express.static("public"));
-
-let participantes = [];
-let resultadoSorteio = [];
 
 // Página inicial
 app.get("/", (req, res) => {
-  res.render("home", { participantes });
+  res.render("home");
 });
 
-// Adicionar participante (com senha)
-app.post("/add-participante", async (req, res) => {
+// Página de criação de sorteio
+app.get("/criar-sorteio", (req, res) => {
+  res.render("criar-sorteio");
+});
+
+// Criar novo sorteio
+app.post("/criar-sorteio", async (req, res) => {
+  const { nome, descricao } = req.body;
+
+  try {
+    const sorteio = await Sorteio.create({ nome, descricao });
+    res.redirect(`/sorteio/${sorteio.id}`);
+  } catch (error) {
+    console.error("Erro ao criar sorteio:", error);
+    res.status(500).send("Erro ao criar sorteio!");
+  }
+});
+
+// Gerenciar sorteio
+app.get("/sorteio/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const sorteio = await Sorteio.findByPk(id, { include: Participante });
+    if (!sorteio) {
+      return res.status(404).send("Sorteio não encontrado!");
+    }
+
+    // Extrair os dados dos participantes
+    const participantes = sorteio.Participantes.map((participante) => ({
+      id: participante.id,
+      nome: participante.nome,
+      amigo: participante.amigo || "Não sorteado",
+    }));
+
+    res.render("gerenciar-sorteio", {
+      id: sorteio.id,
+      nome: sorteio.nome,
+      descricao: sorteio.descricao,
+      participantes,
+    });
+  } catch (error) {
+    console.error("Erro ao carregar sorteio:", error);
+    res.status(500).send("Erro ao carregar sorteio!");
+  }
+});
+
+// Adicionar participante ao sorteio
+app.post("/sorteio/:id/add-participante", async (req, res) => {
+  const { id } = req.params;
   const { nome, senha } = req.body;
 
-  if (!nome || !senha) {
-    return res.status(400).send("Nome e senha são obrigatórios!");
-  }
+  try {
+    const sorteio = await Sorteio.findByPk(id);
+    if (!sorteio) {
+      return res.status(404).send("Sorteio não encontrado!");
+    }
 
-  const hashedSenha = await bcrypt.hash(senha, 10); // Criptografa a senha
-  participantes.push({ nome, senha: hashedSenha });
-  res.redirect("/"); // Redireciona para a página inicial
+    const hashedSenha = await bcrypt.hash(senha, 10);
+    await Participante.create({ nome, senha: hashedSenha, SorteioId: id });
+
+    res.redirect(`/sorteio/${id}`);
+  } catch (error) {
+    console.error("Erro ao adicionar participante:", error);
+    res.status(500).send("Erro ao adicionar participante!");
+  }
 });
 
 // Realizar sorteio
-app.post("/sortear", (req, res) => {
-  if (participantes.length < 2) {
-    return res.status(400).send("É necessário pelo menos 2 participantes!");
+app.post("/sorteio/:id/sortear", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const sorteio = await Sorteio.findByPk(id, { include: Participante });
+
+    if (!sorteio) {
+      return res.status(404).send("Sorteio não encontrado!");
+    }
+
+    const participantes = sorteio.Participantes;
+    if (participantes.length < 2) {
+      return res
+        .status(400)
+        .send(
+          "É necessário pelo menos 2 participantes para realizar o sorteio!"
+        );
+    }
+
+    const resultados = randomizeSecretSanta(participantes);
+
+    await Promise.all(
+      resultados.map(async (item) => {
+        await Participante.update(
+          { amigo: item.amigo },
+          { where: { nome: item.nome, SorteioId: id } }
+        );
+      })
+    );
+
+    res.redirect(`/sorteio/${id}`);
+  } catch (error) {
+    console.error("Erro ao realizar sorteio:", error);
+    res.status(500).send("Erro ao realizar sorteio!");
   }
-
-  resultadoSorteio = randomizeSecretSanta(participantes);
-
-  res.redirect("/login"); // Redireciona para a página de login
 });
 
-// Página de login
-app.get("/login", (req, res) => {
-  res.render("login");
+// Listar sorteios
+app.get("/sorteios", async (req, res) => {
+  try {
+    const sorteios = await Sorteio.findAll();
+
+    const data = sorteios.map((s) => ({
+      id: s.dataValues.id,
+      nome: s.dataValues.nome,
+      descricao: s.dataValues.descricao,
+    }));
+    res.render("listar-sorteios", { sorteios: data });
+  } catch (error) {
+    console.error("Erro ao carregar sorteios:", error);
+    res.status(500).send("Erro ao carregar sorteios!");
+  }
 });
 
-// Autenticar participante
-app.post("/login", async (req, res) => {
+// Login do participante para ver o resultado
+app.post("/sorteio/:id/login", async (req, res) => {
+  const { id } = req.params;
   const { nome, senha } = req.body;
+  console.log("a" + nome + "a");
 
-  const participante = participantes.find((p) => p.nome === nome);
-  if (!participante) {
-    return res.status(400).send("Participante não encontrado!");
+  try {
+    const participante = await Participante.findOne({
+      where: { nome, SorteioId: id },
+    });
+
+    if (!participante) {
+      return res.status(404).send("Participante não encontrado neste sorteio!");
+    }
+
+    const senhaValida = await bcrypt.compare(senha, participante.senha);
+    if (!senhaValida) {
+      return res.status(401).send("Senha incorreta!");
+    }
+
+    if (!participante.amigo) {
+      return res.status(400).send("O sorteio ainda não foi realizado!");
+    }
+
+    res.render("resultado-individual", {
+      nome: participante.nome,
+      amigo: participante.amigo,
+    });
+  } catch (error) {
+    console.error("Erro no login:", error);
+    res.status(500).send("Erro no login!");
   }
-
-  const senhaValida = await bcrypt.compare(senha, participante.senha);
-  if (!senhaValida) {
-    return res.status(401).send("Senha incorreta!");
-  }
-
-  const resultado = resultadoSorteio.find((p) => p.nome === nome);
-  if (!resultado) {
-    return res.status(404).send("Resultado não encontrado!");
-  }
-
-  res.render("resultado-individual", {
-    nome: resultado.nome,
-    amigo: resultado.amigo,
-  });
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta http://localhost:${PORT}`);
+// Página de login do participante
+app.get("/sorteio/:id/login-participante", (req, res) => {
+  const { id } = req.params;
+  res.render("login-participante", { id });
+});
+
+// Conexão ao banco e inicialização do servidor
+const conn = require("./db/conn");
+app.listen(port, async () => {
+  try {
+    await conn.sync(); // Use { force: true } para recriar tabelas durante o desenvolvimento
+    console.log(`Servidor rodando em http://localhost:${port}`);
+  } catch (error) {
+    console.error("Erro ao conectar ao banco de dados:", error);
+  }
 });
